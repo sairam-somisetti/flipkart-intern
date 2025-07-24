@@ -71,19 +71,19 @@ The Employee Leave Management System (ELMS) is a comprehensive web application d
 ## Screenshots
 
 ### Login Page
-<img width="1894" height="901" alt="Image" src="https://github.com/user-attachments/assets/3fc1e0d2-b7fa-432a-a6ed-3371c27d0ac2" />
+<img width="1894" height="901" alt="Image" src="https://github.com/user-attachments/assets/2dfa1b5b-4aab-4279-8025-3c8cbad57b72" />
 
 ### Employee Dashboard
-<img width="1918" height="963" alt="Image" src="https://github.com/user-attachments/assets/6bed3582-248b-46cf-94c6-2cfe16af5032" />
+<img width="1918" height="963" alt="Image" src="https://github.com/user-attachments/assets/5a76c4c4-00b9-4a31-ba7a-7e4d05c2cc4c" />
 
 ### Leave Request Form
-<img width="1904" height="955" alt="Image" src="https://github.com/user-attachments/assets/09649452-8cba-4e88-8f55-eb8c2b192afe" />
+<img width="1904" height="955" alt="Image" src="https://github.com/user-attachments/assets/2cac7a38-dc26-4c48-a313-9aefceaf05cc" />
 
 ### Manager Approval Dashboard
-<img width="1918" height="962" alt="Image" src="https://github.com/user-attachments/assets/e79c25a9-a9f8-4ed4-8c8c-af9ee2a5d835" />
+<img width="1918" height="962" alt="Image" src="https://github.com/user-attachments/assets/a96d8f5e-badb-4903-ae8f-85c0f983f1a6" />
 
 ### Reports Dashboard
-<img width="1906" height="964" alt="Image" src="https://github.com/user-attachments/assets/dd9f49c8-4dd3-45da-a744-aac931c35586" />
+<img width="1906" height="964" alt="Image" src="https://github.com/user-attachments/assets/1deda058-5e96-4ac6-ac5b-d71bfc9f8280" />
 
 ## Database Schema
 The system uses the following database tables:
