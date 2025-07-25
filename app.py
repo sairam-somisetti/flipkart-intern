@@ -378,7 +378,7 @@ def new_leave_request():
 def view_leave_request(request_id):
     leave_request = LeaveRequest.query.get_or_404(request_id)
     
-    # Check permissions
+    # ----Checking permissions----
     if (current_user.role == Role.EMPLOYEE and leave_request.employee_id != current_user.id):
         flash('Access denied', 'error')
         return redirect(url_for('leave_requests'))
@@ -423,7 +423,7 @@ def approve_leave_request(request_id):
 def reject_leave_request(request_id):
     leave_request = LeaveRequest.query.get_or_404(request_id)
     
-    # Manager can only reject their team's requests
+    # ------Manager can only reject their team's requests others can't reject-----
     if (current_user.role == Role.MANAGER and 
         leave_request.manager_id != current_user.id):
         flash('Access denied', 'error')
@@ -454,7 +454,7 @@ def reject_leave_request(request_id):
 def cancel_leave_request(request_id):
     leave_request = LeaveRequest.query.get_or_404(request_id)
     
-    # Only employee can cancel their own requests
+    # --- employee can cancel their own requests----
     if leave_request.employee_id != current_user.id:
         flash('Access denied', 'error')
         return redirect(url_for('leave_requests'))
@@ -576,7 +576,7 @@ def generate_report():
     
     query = LeaveRequest.query.join(User)
     
-    # Apply filters
+    # ===Applying the filters===
     if start_date:
         query = query.filter(LeaveRequest.start_date >= datetime.strptime(start_date, '%Y-%m-%d').date())
     
@@ -603,13 +603,13 @@ def generate_csv_report(requests):
     output = io.StringIO()
     writer = csv.writer(output)
     
-    # Write header
+    # **usage of Write header**
     writer.writerow([
         'Employee Name', 'Department', 'Leave Type', 'Start Date', 'End Date',
         'Days Requested', 'Status', 'Reason', 'Manager Comments', 'Created At'
     ])
     
-    # Write data
+    #  ***usage of Write data***
     for req in requests:
         writer.writerow([
             f"{req.employee.first_name} {req.employee.last_name}",
@@ -639,12 +639,12 @@ def generate_pdf_report(requests):
     styles = getSampleStyleSheet()
     story = []
     
-    # Title
+    # ----Title----
     title = Paragraph("Leave Management Report", styles['Title'])
     story.append(title)
     story.append(Spacer(1, 12))
     
-    # Summary
+    # ===Summary of the application===
     total_requests = len(requests)
     approved_requests = len([r for r in requests if r.status == LeaveStatus.APPROVED])
     pending_requests = len([r for r in requests if r.status == LeaveStatus.PENDING])
@@ -660,7 +660,7 @@ def generate_pdf_report(requests):
     story.append(summary)
     story.append(Spacer(1, 12))
     
-    # Table data
+    # -----Table's data----
     data = [['Employee', 'Leave Type', 'Start Date', 'End Date', 'Days', 'Status']]
     
     for req in requests:
@@ -673,7 +673,7 @@ def generate_pdf_report(requests):
             req.status.value
         ])
     
-    # Create table
+    # ----Creating the table----
     table = Table(data)
     table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
@@ -697,7 +697,7 @@ def generate_pdf_report(requests):
         download_name=f'leave_report_{datetime.now().strftime("%Y%m%d")}.pdf'
     )
 
-# Error Handlers
+# ----Error Handling----
 @app.errorhandler(404)
 def not_found_error(error):
     return render_template('404.html'), 404
@@ -707,17 +707,17 @@ def internal_error(error):
     db.session.rollback()
     return render_template('500.html'), 500
 
-# Initialize database
+# ----Initializing the database----
 def create_tables():
     with app.app_context():
         db.create_all()
         
-        # Create admin user if none exists
+        # ----Creating admin user if none exists----
         if not User.query.filter_by(role=Role.ADMIN).first():
             admin = User(
                 username='admin',
                 email='admin@example.com',
-                first_name='Admin',
+                first_name='Mohit',
                 last_name='User',
                 role=Role.ADMIN,
                 department='Administration',
@@ -727,12 +727,12 @@ def create_tables():
             db.session.add(admin)
             print("Created default admin user")
 
-        # Create default manager if none exists
+        # ----Creating default manager if none exists----
         if not User.query.filter_by(role=Role.MANAGER).first():
             manager = User(
                 username='manager',
                 email='manager@example.com',
-                first_name='Jeevan',
+                first_name='Sairam',
                 last_name='Manager',
                 role=Role.MANAGER,
                 department='Management',
@@ -742,12 +742,12 @@ def create_tables():
             db.session.add(manager)
             print("Created default manager user")
 
-        # Create default employee if none exists
+        # ***Creating the default employee if none exists***
         if not User.query.filter_by(role=Role.EMPLOYEE).first():
             employee = User(
                 username='employee',
                 email='employee@example.com',
-                first_name='Akhilesh',
+                first_name='Krish',
                 last_name='Employee',
                 role=Role.EMPLOYEE,
                 department='Operations',
@@ -760,7 +760,7 @@ def create_tables():
 
         db.session.commit()
 
-# Run the application
+# ---Running the application---
 if __name__ == '__main__':
     create_tables()
     app.run(debug=True)
