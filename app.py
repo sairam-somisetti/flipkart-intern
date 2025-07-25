@@ -1,7 +1,6 @@
-"""
-Flask Leave Management System - HTML Web Interface
-A comprehensive leave management system with HTML templates for easy visibility
-"""
+#created by SGVNP SAIRAM
+#Flask Leave Management System - HTML Web Interface
+#A comprehensive leave management system with HTML templates for easy visibility
 
 from flask import Flask, request, jsonify, render_template, redirect, url_for, flash, send_file
 from flask_sqlalchemy import SQLAlchemy
@@ -20,19 +19,19 @@ from reportlab.lib.styles import getSampleStyleSheet
 import json
 from enum import Enum
 
-# Initialize Flask app
+# ----Initialization of  Flask app----
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///leave_management.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Initialize extensions
+# ----Initialization of extensions----
 db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-# Enums for better type safety
+# ----Enums  for safety purpose----
 class Role(Enum):
     ADMIN = 'admin'
     MANAGER = 'manager'
@@ -52,7 +51,7 @@ class LeaveType(Enum):
     EMERGENCY = 'emergency'
     UNPAID = 'unpaid'
 
-# Database Models (same as before)
+# -----------Database Models-----------
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -66,7 +65,7 @@ class User(UserMixin, db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # Relationships
+    # ----relationships of different templates----
     leave_requests = db.relationship('LeaveRequest', foreign_keys='LeaveRequest.employee_id', backref='employee')
     managed_requests = db.relationship('LeaveRequest', foreign_keys='LeaveRequest.manager_id', backref='manager')
     audit_logs = db.relationship('AuditLog', backref='user')
@@ -149,7 +148,7 @@ class AuditLog(db.Model):
             'timestamp': self.timestamp.isoformat()
         }
 
-# Login manager user loader
+# ----Login manager ------
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -158,7 +157,7 @@ def load_user(user_id):
 def inject_now():
     return {'now': datetime.now()}
 
-# Utility functions
+# ----utility functions----
 def log_audit(action, resource_type, resource_id=None, details=None):
     """Log user actions for audit trail"""
     if current_user.is_authenticated:
@@ -197,7 +196,7 @@ def calculate_business_days(start_date, end_date):
         current_date += timedelta(days=1)
     return business_days
 
-# HTML Routes
+# ----different html routes----
 @app.route('/')
 def index():
     if current_user.is_authenticated:
@@ -240,7 +239,7 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    # Get dashboard statistics
+    # ----Getting dashboard statistics----
     stats = {}
     
     if current_user.role == Role.ADMIN:
@@ -284,7 +283,7 @@ def dashboard():
             ).scalar() or 0
         }
     
-    # Get recent leave requests
+    # ----Getting recent leave requests----
     if current_user.role == Role.ADMIN:
         recent_requests = LeaveRequest.query.order_by(LeaveRequest.created_at.desc()).limit(5).all()
     elif current_user.role == Role.MANAGER:
@@ -308,7 +307,7 @@ def leave_requests():
     
     query = LeaveRequest.query
     
-    # Role-based filtering
+    # ----filtering based on role----
     if current_user.role == Role.EMPLOYEE:
         query = query.filter_by(employee_id=current_user.id)
     elif current_user.role == Role.MANAGER:
@@ -316,7 +315,7 @@ def leave_requests():
         employee_ids = [emp.id for emp in managed_employees] + [current_user.id]
         query = query.filter(LeaveRequest.employee_id.in_(employee_ids))
     
-    # Apply status filter
+    # ----Applying the status filter----
     if status_filter:
         query = query.filter_by(status=LeaveStatus(status_filter))
     
@@ -336,7 +335,7 @@ def new_leave_request():
             end_date = datetime.strptime(request.form['end_date'], '%Y-%m-%d').date()
             reason = request.form['reason']
             
-            # Validation
+            # -----Validation purpose-----
             if start_date > end_date:
                 flash('Start date must be before end date', 'error')
                 return render_template('new_leave_request.html')
@@ -347,7 +346,7 @@ def new_leave_request():
             
             days_requested = calculate_business_days(start_date, end_date)
             
-            # Find manager
+            # ----Finding the manager----
             manager = User.query.get(current_user.manager_id) if current_user.manager_id else None
             
             leave_request = LeaveRequest(
