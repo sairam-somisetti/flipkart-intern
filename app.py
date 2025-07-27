@@ -6,7 +6,7 @@ Project Title: Employee Leave Management System (ELMS) – Flask Application
 
 # TODO: To restructure the program for efficient template rendering and improved UI aesthetics
 
-# Essential libraries needed for the program implementation
+# import of libraries for the program implementation
 from flask import Flask, request, render_template, redirect, url_for, flash, send_file
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
@@ -22,20 +22,19 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.styles import ParagraphStyle
 from enum import Enum
 
-# Initialize the Flask app
+# Initialization of the Flask app
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///leave_management.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Using SQLAlchemy for ORM - chose this over raw SQL for easier model management
-# and to prevent SQL injection risks that our security audit flagged last quarter
 db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-# User roles for the ELMS
+# User roles in ELMS
 class Role(Enum):
     ADMIN = 'admin'
     MANAGER = 'manager'
@@ -55,7 +54,7 @@ class LeaveType(Enum):
     EMERGENCY = 'emergency'
     UNPAID = 'unpaid'
 
-# Database Models
+# Models for database
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -69,7 +68,7 @@ class User(UserMixin, db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # Relationships between users
+    # user relationships
     leave_requests = db.relationship('LeaveRequest', foreign_keys='LeaveRequest.employee_id', backref='employee')
     managed_requests = db.relationship('LeaveRequest', foreign_keys='LeaveRequest.manager_id', backref='manager')
     audit_logs = db.relationship('AuditLog', backref='user')
@@ -94,7 +93,7 @@ class User(UserMixin, db.Model):
             'created_at': self.created_at.isoformat()
         }
 
-# Leave request model
+# Leave request 
 class LeaveRequest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     employee_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -129,7 +128,7 @@ class LeaveRequest(db.Model):
             'approved_at': self.approved_at.isoformat() if self.approved_at else None
         }
 
-# Audit log model
+# Audit log
 class AuditLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -154,12 +153,12 @@ class AuditLog(db.Model):
             'timestamp': self.timestamp.isoformat()
         }
 
-# Login manager user loader
+# Login manager route to user loader
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# Inject current datetime into templates
+# Injecting current datetime 
 @app.context_processor
 def inject_now():
     return {'now': datetime.now()}
@@ -213,7 +212,7 @@ def index():
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
 
-# login.html file is used here
+# login.html 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -248,7 +247,7 @@ def logout():
     flash('You have been logged out successfully', 'info')
     return redirect(url_for('login'))
 
-# Dashboard.html is used here
+# Dashboard.html 
 # User Roles: Admin, Manager, Employee
 @app.route('/dashboard')
 @login_required
@@ -297,7 +296,7 @@ def dashboard():
             ).scalar() or 0
         }
     
-    # Get recent leave requests
+    # Getting recent leave requests
     if current_user.role == Role.ADMIN:
         recent_requests = LeaveRequest.query.order_by(LeaveRequest.created_at.desc()).limit(5).all()
     elif current_user.role == Role.MANAGER:
@@ -313,7 +312,7 @@ def dashboard():
     
     return render_template('dashboard.html', stats=stats, recent_requests=recent_requests)
 
-# Employees: Apply for leave, view status, edit or cancel requests
+# Employees: Applying for leave, view status, edit or cancel requests
 @app.route('/leave-requests')
 @login_required
 def leave_requests():
@@ -322,7 +321,7 @@ def leave_requests():
     
     query = LeaveRequest.query
     
-    # Role-based filtering
+    # filtering based on role
     if current_user.role == Role.EMPLOYEE:
         query = query.filter_by(employee_id=current_user.id)
     elif current_user.role == Role.MANAGER:
@@ -330,7 +329,7 @@ def leave_requests():
         employee_ids = [emp.id for emp in managed_employees] + [current_user.id]
         query = query.filter(LeaveRequest.employee_id.in_(employee_ids))
     
-    # Apply status filter
+    # filter for apply status
     if status_filter:
         query = query.filter_by(status=LeaveStatus(status_filter))
     
@@ -340,7 +339,7 @@ def leave_requests():
     
     return render_template('leave_requests.html', requests=requests, status_filter=status_filter)
 
-# Employee creates new leave request
+# new leave request created by employee
 @app.route('/leave-requests/new', methods=['GET', 'POST'])
 @login_required
 def new_leave_request():
@@ -389,13 +388,13 @@ def new_leave_request():
     
     return render_template('new_leave_request.html')
 
-# View leave request details
+# details of leave request
 @app.route('/leave-requests/<int:request_id>')
 @login_required
 def view_leave_request(request_id):
     leave_request = LeaveRequest.query.get_or_404(request_id)
     
-    # Check permissions
+    # Checking permissions
     if (current_user.role == Role.EMPLOYEE and leave_request.employee_id != current_user.id):
         flash('Access denied', 'error')
         return redirect(url_for('leave_requests'))
@@ -442,7 +441,7 @@ def approve_leave_request(request_id):
 def reject_leave_request(request_id):
     leave_request = LeaveRequest.query.get_or_404(request_id)
     
-    # Manager can only reject their team's requests
+    # Manager rejects team requests
     if (current_user.role == Role.MANAGER and 
         leave_request.manager_id != current_user.id):
         flash('Access denied', 'error')
@@ -473,7 +472,7 @@ def reject_leave_request(request_id):
 def cancel_leave_request(request_id):
     leave_request = LeaveRequest.query.get_or_404(request_id)
     
-    # Only employee can cancel their own requests
+    # employee only cancel requests
     if leave_request.employee_id != current_user.id:
         flash('Access denied', 'error')
         return redirect(url_for('leave_requests'))
@@ -499,7 +498,7 @@ def users():
     users = User.query.paginate(page=page, per_page=10, error_out=False)
     return render_template('users.html', users=users)
 
-# Admin can add new users
+# Admin adding new users
 @app.route('/users/new', methods=['GET', 'POST'])
 @require_role([Role.ADMIN])
 def new_user():
@@ -553,7 +552,7 @@ def profile():
     
     return render_template('profile.html')
 
-# Change password functionality
+# Change password
 @app.route('/change-password', methods=['GET', 'POST'])
 @login_required
 def change_password():
@@ -583,7 +582,7 @@ def change_password():
     
     return render_template('change_password.html')
 
-# Reports for admin and managers
+# Reports viewing
 @app.route('/reports')
 @require_role([Role.MANAGER, Role.ADMIN])
 def reports():
@@ -609,12 +608,12 @@ def generate_report():
         department = request.args.get('department')
         format_type = request.args.get('format', 'csv')
     
-    # Explicit join to avoid ambiguity
+    # avoiding ambiguity explicitly
     query = db.session.query(LeaveRequest, User).join(
         User, LeaveRequest.employee_id == User.id
     )
     
-    # Apply filters based on report type
+    # Applying filters based on the type of reports
     if report_type == 'monthly_summary':
         first_day = datetime.now().replace(day=1).date()
         last_day = (first_day + timedelta(days=32)).replace(day=1) - timedelta(days=1)
@@ -630,7 +629,7 @@ def generate_report():
         # This would need custom implementation based on your leave balance logic
         pass
     
-    # Apply additional filters if provided
+    # Applying additional filters if needed
     if start_date:
         query = query.filter(LeaveRequest.start_date >= datetime.strptime(start_date, '%Y-%m-%d').date())
     
@@ -640,13 +639,13 @@ def generate_report():
     if department:
         query = query.filter(User.department == department)
     
-    # Role-based filtering
+    # filtering based on the role
     if current_user.role == Role.MANAGER and report_type != 'team_usage':
         managed_employees = User.query.filter_by(manager_id=current_user.id).all()
         employee_ids = [emp.id for emp in managed_employees]
         query = query.filter(LeaveRequest.employee_id.in_(employee_ids))
     
-    # Execute query and unpack results
+    # Execution of query
     results = query.all()
     requests = [req for req, user in results]  # Extract just the LeaveRequest objects
     
@@ -660,7 +659,7 @@ def generate_csv_report(requests):
     output = io.StringIO()
     writer = csv.writer(output)
     
-    # Header are written
+    # Headers
     writer.writerow([
         'Employee Name', 'Department', 'Leave Type', 'Start Date', 'End Date',
         'Days Requested', 'Status', 'Reason', 'Manager Comments', 'Created At'
@@ -707,7 +706,7 @@ def generate_leave_pdf(leave_requests):
     
     story = []
     
-    # Title with company branding
+    # Title with company brand
     title = Paragraph("Employee Leave Management System Report", company_style)
     story.append(title)
     
@@ -773,7 +772,7 @@ def generate_leave_pdf(leave_requests):
         download_name=f'leave_report_{datetime.now().strftime("%Y%m%d")}.pdf'
     )
 
-# Error Handlers for 404 & 500
+# Error Handling for 404 & 500
 @app.errorhandler(404)
 def not_found_error(error):
     return render_template('404.html'), 404
@@ -783,12 +782,12 @@ def internal_error(error):
     db.session.rollback()
     return render_template('500.html'), 500
 
-# Initializing the  database
+# Initialization of database
 def create_tables():
     with app.app_context():
         db.create_all()
         
-        # Create admin user if none exists
+        # Create admin user if nobody is exists
         if not User.query.filter_by(role=Role.ADMIN).first():
             admin = User(
                 username='admin',
@@ -803,7 +802,7 @@ def create_tables():
             db.session.add(admin)
             print("Created default admin user")
 
-        # Create default manager if none exists
+        # Create default manager if nobody is exists
         if not User.query.filter_by(role=Role.MANAGER).first():
             manager = User(
                 username='manager',
@@ -818,7 +817,7 @@ def create_tables():
             db.session.add(manager)
             print("Created default manager user")
 
-        # Create default employee if none exists
+        # Create default employee if nobody is exists
         if not User.query.filter_by(role=Role.EMPLOYEE).first():
             employee = User(
                 username='employee',
@@ -836,7 +835,7 @@ def create_tables():
 
         db.session.commit()
 
-# Run the application
+# Running the application
 if __name__ == '__main__':
     create_tables()
     app.run(debug=True)
